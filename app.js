@@ -2,23 +2,24 @@ const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const path = require('path')
-const nunjucks = require('nunjucks')
+const models = require('./models/index')
+const bodyParser = require('body-parser')
+const router = require('./routes')
 
 app.use(morgan('dev'))
-app.use(express.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }))
 
+const layout = require('./views/layout')
 app.use(express.static(__dirname + "/public"))
-
-// point nunjucks to the directory containing templates and turn off caching; configure returns an Environment 
-// instance, which we'll want to use to add Markdown support later.
-const env = nunjucks.configure('views', {noCache: true});
-// have res.render work with html files
-app.set('view engine', 'html');
-// when res.render works with html files, have it use nunjucks to do so
-app.engine('html', nunjucks.render);
+app.use(router)
 
 app.get('/', (req, res, next) => {
-    res.sendFile(path.join(__dirname, 'views', 'homepage.html'))
+    res.send(layout('hello world'))
 })
-
+//Putting .sync before app.listen This prevents us from running into 
+//a race condition where users are able to make requests 
+//to the database before the tables have been created
+models.db.sync({forcd: true})
+//.sync is an asynchronous operation 
+//(it is interacting with the database) and returns a promise.
 app.listen(3000)
